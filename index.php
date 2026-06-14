@@ -1,0 +1,912 @@
+<?php
+require __DIR__ . '/auth.php';
+exigirLogin();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão de Clientes - Aposentadoria Prev</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fa-solid fa-shield-heart me-2"></i>Aposentadoria Prev
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#dashboard"><i class="fa-solid fa-chart-line me-1"></i> Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="#cadastro"><i class="fa-solid fa-user-plus me-1"></i> Cadastro</a></li>
+          <li class="nav-item"><a class="nav-link" href="#clientes"><i class="fa-solid fa-users me-1"></i> Clientes</a></li>
+          <li class="nav-item"><a class="nav-link" href="logout.php"><i class="fa-solid fa-right-from-bracket me-1"></i> Sair</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+           <h1 class="fw-bold mb-2">Gestão de Clientes</h1>
+        </div>
+  </header>
+
+  <main class="container page-shell my-4">
+    <section id="dashboard" class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card d-flex align-items-center gap-3">
+          <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <p class="stat-number" id="totalClientes">0</p>
+            <span class="small-muted">Clientes</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card d-flex align-items-center gap-3">
+          <div class="stat-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+          <div>
+            <p class="stat-number" id="totalAnalise">0</p>
+            <span class="small-muted">Em análise</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card d-flex align-items-center gap-3">
+          <div class="stat-icon"><i class="fa-solid fa-folder-open"></i></div>
+          <div>
+            <p class="stat-number" id="totalDocs">0</p>
+            <span class="small-muted">Aguardando documentos</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card d-flex align-items-center gap-3">
+          <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <div>
+            <p class="stat-number" id="totalRetornos">0</p>
+            <span class="small-muted">Retornos pendentes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="cadastro" class="panel-card">
+      <div class="panel-header">
+        <h2><i class="fa-solid fa-user-plus me-2"></i><span id="formTitle">Novo atendimento</span></h2>
+        <button class="btn btn-sm btn-outline-prev" id="toggleFormBtn" type="button">
+          <i class="fa-solid fa-minus me-1"></i> Minimizar
+        </button>
+      </div>
+
+      <div class="panel-body" id="formContainer">
+        <form id="clientForm" autocomplete="off">
+          <input type="hidden" id="clienteId" />
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="nome" class="form-label required">Nome completo</label>
+              <input type="text" class="form-control" id="nome" required placeholder="Ex: Maria Silva Santos" />
+            </div>
+            <div class="col-md-3">
+              <label for="cpf" class="form-label required">CPF</label>
+              <input type="text" class="form-control" id="cpf" maxlength="14" required placeholder="000.000.000-00" />
+            </div>
+            <div class="col-md-3">
+              <label for="nascimento" class="form-label">Nascimento</label>
+              <input type="date" class="form-control" id="nascimento" />
+            </div>
+
+            <div class="col-md-4">
+              <label for="telefone" class="form-label required">WhatsApp / Telefone</label>
+              <input type="text" class="form-control" id="telefone" maxlength="15" required placeholder="(19) 99999-9999" />
+            </div>
+            <div class="col-md-4">
+              <label for="email" class="form-label">E-mail</label>
+              <input type="email" class="form-control" id="email" placeholder="cliente@email.com" />
+            </div>
+            <div class="col-md-4">
+              <label for="endereco" class="form-label">Endereço</label>
+              <input type="text" class="form-control" id="endereco" placeholder="Rua, número, bairro e cidade" />
+            </div>
+
+            <div class="col-md-4">
+              <label for="unidade" class="form-label required">Unidade</label>
+              <select class="form-select" id="unidade" required>
+                <option value="">Selecione...</option>
+                <option>Americana</option>
+                <option>Sumaré</option>
+                <option>Santa Barbara Do Oeste</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="beneficio" class="form-label required">Tipo de benefício</label>
+              <select class="form-select" id="beneficio" required>
+                <option value="">Selecione...</option>
+                <option>Aposentadoria por idade</option>
+                <option>Aposentadoria por tempo de contribuição</option>
+                <option>Aposentadoria do professor</option>
+                <option>Aposentadoria por invalidez</option>
+                <option>Aposentadoria servidor público</option>
+                <option>BPC / LOAS</option>
+                <option>Pensão por morte</option>
+                <option>Auxílio maternidade</option>
+                <option>Revisão de benefício</option>
+                <option>Serviços digitais Meu INSS</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="status" class="form-label required">Status</label>
+              <select class="form-select" id="status" required>
+                <option>Em análise</option>
+                <option>Aguardando documentos</option>
+                <option>Agendado</option>
+                <option>Em andamento</option>
+                <option>Finalizado</option>
+                <option>Arquivado</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label for="responsavel" class="form-label">Responsável</label>
+              <select class="form-select" id="responsavel">
+                <option value="">Selecione...</option>
+                <option>Rogério Pereira da Silva</option>
+                <option>Francieli Gonçalves de Oliveira</option>
+                <option>Murillo Gonçalves</option>
+                <option>Silmar Pereira de Freitas</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="dataAtendimento" class="form-label">Data do atendimento</label>
+              <input type="date" class="form-control" id="dataAtendimento" />
+            </div>
+            <div class="col-md-4">
+              <label for="prioridade" class="form-label">Prioridade</label>
+              <select class="form-select" id="prioridade">
+                <option>Normal</option>
+                <option>Alta</option>
+                <option>Urgente</option>
+                <option>Baixa</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="proximoRetorno" class="form-label">Próximo retorno</label>
+              <input type="date" class="form-control" id="proximoRetorno" />
+            </div>
+
+            <div class="col-12">
+              <div class="documentos-box">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+                  <div>
+                    <label class="form-label mb-1">Checklist de documentos</label>
+                    <div class="small-muted">Escolha o tipo de benefício para carregar a lista. Marque o que já foi entregue e anexe o PDF quando houver.</div>
+                  </div>
+                  <span class="badge text-bg-light border" id="documentosResumo">0 de 0 entregues</span>
+                </div>
+                <div class="row g-3" id="documentosChecklist">
+                  <div class="col-12 small-muted">Selecione um benefício para ver os documentos necessários.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label for="observacoes" class="form-label">Observações</label>
+              <textarea class="form-control" id="observacoes" rows="3" placeholder="Anote pendências, próximos passos ou informações importantes do atendimento."></textarea>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary" id="cancelEditBtn" style="display:none;">Cancelar edição</button>
+            <button type="reset" class="btn btn-secondary">Limpar</button>
+            <button type="submit" class="btn btn-prev"><i class="fa-solid fa-floppy-disk me-1"></i> Salvar cliente</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="clientes" class="panel-card">
+      <div class="panel-header">
+        <h2><i class="fa-solid fa-address-book me-2"></i>Clientes cadastrados</h2>
+        <div class="d-flex gap-2 search-controls">
+          <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar nome, CPF ou benefício..." />
+          <select class="form-select form-select-sm" id="statusFilter">
+            <option value="">Todos os status</option>
+            <option value="__retornos">Retornos pendentes</option>
+            <option>Em análise</option>
+            <option>Aguardando documentos</option>
+            <option>Agendado</option>
+            <option>Em andamento</option>
+            <option>Finalizado</option>
+            <option>Arquivado</option>
+          </select>
+          <button class="btn btn-sm btn-success" id="exportBtn" type="button"><i class="fa-solid fa-file-excel me-1"></i> Exportar</button>
+        </div>
+      </div>
+
+      <div class="panel-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>CPF</th>
+                <th>Contato</th>
+                <th>Benefício</th>
+                <th>Unidade</th>
+                <th>Status</th>
+                <th>Retorno</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal fade" id="detalhesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content rounded-4">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-solid fa-circle-info me-2"></i>Detalhes do cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="detalhesCliente"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    const STORAGE_KEY = "aposentadoria_prev_clientes";
+    const API_URL = "clientes_api.php";
+    const DOCUMENTOS_BASE = [
+      "RG e CPF",
+      "Comprovante de residência",
+      "Carteira de trabalho",
+      "CNIS atualizado",
+      "Senha ou acesso ao Meu INSS",
+      "Contrato de prestação de serviços"
+    ];
+    const DOCUMENTOS_POR_BENEFICIO = {
+      "Aposentadoria por idade": [
+        ...DOCUMENTOS_BASE,
+        "Certidão de nascimento ou casamento",
+        "Carnês de contribuição",
+        "Documentos de atividade rural, se houver"
+      ],
+      "Aposentadoria por tempo de contribuição": [
+        ...DOCUMENTOS_BASE,
+        "PPP",
+        "LTCAT ou laudos de insalubridade",
+        "Certificado de reservista",
+        "Documentos de vínculos sem registro no CNIS"
+      ],
+      "Aposentadoria do professor": [
+        ...DOCUMENTOS_BASE,
+        "Declaração da escola",
+        "Contratos ou portarias de professor",
+        "Holerites ou comprovantes de vínculo"
+      ],
+      "Aposentadoria por invalidez": [
+        ...DOCUMENTOS_BASE,
+        "Laudos médicos",
+        "Exames recentes",
+        "Receitas e relatórios de tratamento",
+        "Atestados de afastamento"
+      ],
+      "Aposentadoria servidor público": [
+        ...DOCUMENTOS_BASE,
+        "Certidão de tempo de contribuição",
+        "Portarias de nomeação",
+        "Holerites",
+        "Ficha funcional"
+      ],
+      "BPC / LOAS": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "CadÚnico atualizado",
+        "Comprovantes de renda do grupo familiar",
+        "Senha ou acesso ao Meu INSS",
+        "Contrato de prestação de serviços",
+        "Laudos médicos, se pessoa com deficiência",
+        "Exames e receitas médicas"
+      ],
+      "Pensão por morte": [
+        "RG e CPF do requerente",
+        "RG e CPF do falecido",
+        "Certidão de óbito",
+        "Certidão de casamento ou prova de união estável",
+        "Documentos dos dependentes",
+        "CNIS do falecido",
+        "Senha ou acesso ao Meu INSS",
+        "Contrato de prestação de serviços"
+      ],
+      "Auxílio maternidade": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "Certidão de nascimento da criança",
+        "Atestado médico, se antes do parto",
+        "Carteira de trabalho",
+        "CNIS atualizado",
+        "Senha ou acesso ao Meu INSS",
+        "Contrato de prestação de serviços"
+      ],
+      "Revisão de benefício": [
+        "RG e CPF",
+        "Carta de concessão",
+        "Processo administrativo do INSS",
+        "CNIS atualizado",
+        "Memória de cálculo",
+        "Extrato de pagamento do benefício",
+        "Senha ou acesso ao Meu INSS",
+        "Contrato de prestação de serviços"
+      ],
+      "Serviços digitais Meu INSS": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "Senha ou acesso ao Meu INSS",
+        "Número do benefício, se houver",
+        "Procuração ou termo de autorização",
+        "Contrato de prestação de serviços"
+      ],
+      "Outro": DOCUMENTOS_BASE
+    };
+
+    let clientes = [];
+    let documentosAnexosAtuais = [];
+
+    const form = document.getElementById("clientForm");
+    const clientesTable = document.getElementById("clientesTable");
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const exportBtn = document.getElementById("exportBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const formTitle = document.getElementById("formTitle");
+    const beneficioSelect = document.getElementById("beneficio");
+    const documentosChecklist = document.getElementById("documentosChecklist");
+    const documentosResumo = document.getElementById("documentosResumo");
+    const detalhesModal = new bootstrap.Modal(document.getElementById("detalhesModal"));
+
+    function somenteNumeros(valor) {
+      return valor.replace(/\D/g, "");
+    }
+
+    function formatarCPF(cpf) {
+      cpf = somenteNumeros(cpf).slice(0, 11);
+      cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2");
+      cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2");
+      cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      return cpf;
+    }
+
+    function formatarTelefone(tel) {
+      tel = somenteNumeros(tel).slice(0, 11);
+      if (tel.length <= 10) {
+        return tel.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").replace(/-$/, "");
+      }
+      return tel.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3").replace(/-$/, "");
+    }
+
+    function validarCPFSimples(cpf) {
+      const n = somenteNumeros(cpf);
+      return n.length === 11 && !/^(\d)\1+$/.test(n);
+    }
+
+    async function apiRequest(opcoes = {}) {
+      const resposta = await fetch(API_URL, {
+        headers: { "Content-Type": "application/json" },
+        ...opcoes
+      });
+      const dados = await resposta.json().catch(() => ({}));
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro ao comunicar com o servidor.");
+      }
+
+      return dados;
+    }
+
+    async function carregarClientes() {
+      clientes = await apiRequest();
+      await migrarClientesDoNavegador();
+      atualizarTabela();
+    }
+
+    async function salvarClienteApi(cliente) {
+      await apiRequest({
+        method: "POST",
+        body: JSON.stringify(cliente)
+      });
+    }
+
+    async function excluirClienteApi(id) {
+      const resposta = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const dados = await resposta.json().catch(() => ({}));
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro ao excluir cliente.");
+      }
+    }
+
+    async function migrarClientesDoNavegador() {
+      const clientesLocais = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (!clientesLocais.length || clientes.length > 0) return;
+
+      for (const cliente of clientesLocais) {
+        await salvarClienteApi({
+          ...cliente,
+          endereco: cliente.endereco || cliente.cidade || "",
+          documentosChecklist: normalizarDocumentos(cliente)
+        });
+      }
+
+      localStorage.removeItem(STORAGE_KEY);
+      clientes = await apiRequest();
+    }
+
+    function escapeHtml(valor) {
+      return String(valor || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function documentosDoBeneficio(beneficio) {
+      return DOCUMENTOS_POR_BENEFICIO[beneficio] || [];
+    }
+
+    function lerArquivoComoDataURL(arquivo) {
+      return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => resolve(leitor.result);
+        leitor.onerror = reject;
+        leitor.readAsDataURL(arquivo);
+      });
+    }
+
+    function normalizarDocumentos(cliente) {
+      if (Array.isArray(cliente.documentosChecklist)) return cliente.documentosChecklist;
+      if (!cliente.documentos) return [];
+
+      return String(cliente.documentos)
+        .split(",")
+        .map(doc => doc.trim())
+        .filter(Boolean)
+        .map(nome => ({ nome, recebido: true, arquivo: "" }));
+    }
+
+    function atualizarResumoDocumentos() {
+      const checks = [...documentosChecklist.querySelectorAll(".documento-entregue")];
+      const entregues = checks.filter(check => check.checked).length;
+      documentosResumo.textContent = `${entregues} de ${checks.length} entregues`;
+    }
+
+    function renderizarChecklistDocumentos(beneficio, documentosSalvos = []) {
+      const salvosPorNome = new Map(documentosSalvos.map(doc => [doc.nome, doc]));
+      const nomes = [...documentosDoBeneficio(beneficio)];
+
+      documentosSalvos.forEach(doc => {
+        if (doc.nome && !nomes.includes(doc.nome)) nomes.push(doc.nome);
+      });
+
+      if (!beneficio) {
+        documentosAnexosAtuais = [];
+        documentosChecklist.innerHTML = '<div class="col-12 small-muted">Selecione um benefício para ver os documentos necessários.</div>';
+        documentosResumo.textContent = "0 de 0 entregues";
+        return;
+      }
+
+      documentosAnexosAtuais = nomes.map(nome => salvosPorNome.get(nome) || {});
+
+      documentosChecklist.innerHTML = nomes.map((nome, index) => {
+        const salvo = salvosPorNome.get(nome) || {};
+        const arquivo = salvo.arquivo || "";
+        return `
+          <div class="col-md-6">
+            <div class="documento-item">
+              <div class="form-check">
+                <input class="form-check-input documento-entregue" type="checkbox" id="doc-${index}" data-index="${index}" ${salvo.recebido ? "checked" : ""}>
+                <label class="form-check-label" for="doc-${index}">${escapeHtml(nome)}</label>
+              </div>
+              <div class="documento-modelo">Modelo: ${escapeHtml(beneficio)}</div>
+              <input class="form-control form-control-sm mt-2 documento-pdf" type="file" accept="application/pdf,.pdf" data-index="${index}" data-nome="${escapeHtml(nome)}" data-arquivo="${escapeHtml(arquivo)}">
+              <div class="small-muted mt-1 documento-arquivo">${arquivo ? `PDF: ${escapeHtml(arquivo)}` : "Nenhum PDF anexado"}</div>
+            </div>
+          </div>`;
+      }).join("");
+
+      documentosChecklist.querySelectorAll(".documento-entregue").forEach(check => {
+        check.addEventListener("change", atualizarResumoDocumentos);
+      });
+
+      documentosChecklist.querySelectorAll(".documento-pdf").forEach(input => {
+        input.addEventListener("change", () => {
+          const arquivo = input.files[0]?.name || "";
+          input.dataset.arquivo = arquivo;
+          input.nextElementSibling.textContent = arquivo ? `PDF: ${arquivo}` : "Nenhum PDF anexado";
+        });
+      });
+
+      atualizarResumoDocumentos();
+    }
+
+    async function obterDocumentosChecklist() {
+      return Promise.all([...documentosChecklist.querySelectorAll(".documento-pdf")].map(async input => {
+        const index = input.dataset.index;
+        const check = documentosChecklist.querySelector(`.documento-entregue[data-index="${index}"]`);
+        const arquivoSelecionado = input.files[0];
+        const salvo = documentosAnexosAtuais[Number(index)] || {};
+        return {
+          nome: input.dataset.nome,
+          recebido: Boolean(check?.checked),
+          arquivo: arquivoSelecionado?.name || input.dataset.arquivo || "",
+          arquivoTipo: arquivoSelecionado?.type || salvo.arquivoTipo || "",
+          arquivoConteudo: arquivoSelecionado ? await lerArquivoComoDataURL(arquivoSelecionado) : (salvo.arquivoConteudo || "")
+        };
+      }));
+    }
+
+    function formatarDocumentos(documentos, modo = "todos") {
+      const lista = Array.isArray(documentos) ? documentos : [];
+      const filtrados = lista.filter(doc => modo === "todos" || (modo === "entregues" ? doc.recebido : !doc.recebido));
+      if (filtrados.length === 0) return "Nenhum";
+      return filtrados.map(doc => `${doc.nome}${doc.arquivo ? ` (${doc.arquivo})` : ""}`).join(", ");
+    }
+
+    function renderizarDocumentosDetalhe(documentos, modo = "todos") {
+      const lista = Array.isArray(documentos) ? documentos : [];
+      const filtrados = lista.filter(doc => modo === "todos" || (modo === "entregues" ? doc.recebido : !doc.recebido));
+      if (filtrados.length === 0) return "Nenhum";
+
+      return `<ul class="mb-0 ps-3">${filtrados.map(doc => {
+        const arquivo = doc.arquivoConteudo
+          ? ` - <a href="${escapeHtml(doc.arquivoConteudo)}" download="${escapeHtml(doc.arquivo || "documento.pdf")}">${escapeHtml(doc.arquivo || "Abrir PDF")}</a>`
+          : (doc.arquivo ? ` - ${escapeHtml(doc.arquivo)}` : "");
+        return `<li>${escapeHtml(doc.nome)}${arquivo}</li>`;
+      }).join("")}</ul>`;
+    }
+
+    function getFormData() {
+      return {
+        id: document.getElementById("clienteId").value || Date.now().toString(),
+        nome: document.getElementById("nome").value.trim(),
+        cpf: document.getElementById("cpf").value.trim(),
+        nascimento: document.getElementById("nascimento").value,
+        telefone: document.getElementById("telefone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        endereco: document.getElementById("endereco").value.trim(),
+        unidade: document.getElementById("unidade").value,
+        beneficio: document.getElementById("beneficio").value,
+        status: document.getElementById("status").value,
+        responsavel: document.getElementById("responsavel").value,
+        dataAtendimento: document.getElementById("dataAtendimento").value,
+        prioridade: document.getElementById("prioridade").value,
+        proximoRetorno: document.getElementById("proximoRetorno").value,
+        documentosChecklist: [],
+        observacoes: document.getElementById("observacoes").value.trim(),
+        criadoEm: new Date().toISOString()
+      };
+    }
+
+    function setFormData(cliente) {
+      document.getElementById("clienteId").value = cliente.id;
+      document.getElementById("nome").value = cliente.nome || "";
+      document.getElementById("cpf").value = cliente.cpf || "";
+      document.getElementById("nascimento").value = cliente.nascimento || "";
+      document.getElementById("telefone").value = cliente.telefone || "";
+      document.getElementById("email").value = cliente.email || "";
+      document.getElementById("endereco").value = cliente.endereco || cliente.cidade || "";
+      document.getElementById("unidade").value = cliente.unidade || "";
+      document.getElementById("beneficio").value = cliente.beneficio || "";
+      document.getElementById("status").value = cliente.status || "Em análise";
+      document.getElementById("responsavel").value = cliente.responsavel || "";
+      document.getElementById("dataAtendimento").value = cliente.dataAtendimento || "";
+      document.getElementById("prioridade").value = cliente.prioridade || "Normal";
+      document.getElementById("proximoRetorno").value = cliente.proximoRetorno || "";
+      document.getElementById("observacoes").value = cliente.observacoes || "";
+      renderizarChecklistDocumentos(cliente.beneficio || "", normalizarDocumentos(cliente));
+
+      formTitle.textContent = "Editar atendimento";
+      cancelEditBtn.style.display = "inline-block";
+      document.getElementById("cadastro").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function resetModoEdicao() {
+      form.reset();
+      document.getElementById("clienteId").value = "";
+      formTitle.textContent = "Novo atendimento";
+      cancelEditBtn.style.display = "none";
+      renderizarChecklistDocumentos("");
+    }
+
+    function iniciais(nome) {
+      return nome
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(p => p[0].toUpperCase())
+        .join("");
+    }
+
+    function statusClass(status) {
+      const mapa = {
+        "Em análise": "text-bg-primary",
+        "Aguardando documentos": "text-bg-warning",
+        "Agendado": "text-bg-secondary",
+        "Em andamento": "text-bg-dark",
+        "Finalizado": "text-bg-success",
+        "Arquivado": "text-bg-light text-dark border"
+      };
+      return mapa[status] || "text-bg-secondary";
+    }
+
+    function prioridadeClass(prioridade) {
+      const mapa = {
+        "Urgente": "text-bg-danger",
+        "Alta": "text-bg-warning",
+        "Normal": "text-bg-primary",
+        "Baixa": "text-bg-light text-dark border"
+      };
+      return mapa[prioridade] || "text-bg-secondary";
+    }
+
+    function hojeISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatarDataBR(data) {
+      if (!data) return "Não informado";
+      const [ano, mes, dia] = data.split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function retornoPendente(cliente) {
+      if (!cliente.proximoRetorno) return false;
+      if (["Finalizado", "Arquivado"].includes(cliente.status)) return false;
+      return cliente.proximoRetorno <= hojeISO();
+    }
+
+    function retornoClass(cliente) {
+      if (!cliente.proximoRetorno || ["Finalizado", "Arquivado"].includes(cliente.status)) return "";
+      if (cliente.proximoRetorno < hojeISO()) return "retorno-atrasado";
+      if (cliente.proximoRetorno === hojeISO()) return "retorno-hoje";
+      return "";
+    }
+
+    function atualizarDashboard() {
+      document.getElementById("totalClientes").textContent = clientes.length;
+      document.getElementById("totalAnalise").textContent = clientes.filter(c => c.status === "Em análise").length;
+      document.getElementById("totalDocs").textContent = clientes.filter(c => c.status === "Aguardando documentos").length;
+      document.getElementById("totalRetornos").textContent = clientes.filter(retornoPendente).length;
+    }
+
+    function filtrarClientes() {
+      const termo = searchInput.value.toLowerCase().trim();
+      const filtroStatus = statusFilter.value;
+
+      return clientes.filter(c => {
+        const texto = `${c.nome} ${c.cpf} ${c.telefone} ${c.beneficio} ${c.endereco || c.cidade || ""} ${c.prioridade || ""} ${c.proximoRetorno || ""}`.toLowerCase();
+        const bateTexto = texto.includes(termo);
+        const bateStatus = filtroStatus === "__retornos" ? retornoPendente(c) : (!filtroStatus || c.status === filtroStatus);
+        return bateTexto && bateStatus;
+      });
+    }
+
+    function atualizarTabela() {
+      atualizarDashboard();
+      const lista = filtrarClientes();
+      clientesTable.innerHTML = "";
+
+      if (lista.length === 0) {
+        clientesTable.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i class="fa-solid fa-user-clock fa-2x mb-3"></i>
+                <p class="mb-0">Nenhum cliente encontrado.</p>
+              </div>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      lista.forEach(cliente => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="client-avatar">${iniciais(cliente.nome)}</div>
+              <div>
+                <strong>${cliente.nome}</strong><br>
+                <small class="text-muted">${escapeHtml(cliente.endereco || cliente.cidade || "Endereço não informado")}</small>
+              </div>
+            </div>
+          </td>
+          <td>${cliente.cpf}</td>
+          <td>
+            ${cliente.telefone}<br>
+            <small class="text-muted">${cliente.email || "Sem e-mail"}</small>
+          </td>
+          <td>${cliente.beneficio}</td>
+          <td>${cliente.unidade}</td>
+          <td><span class="badge badge-status ${statusClass(cliente.status)}">${cliente.status}</span></td>
+          <td>
+            <span class="${retornoClass(cliente)}">${formatarDataBR(cliente.proximoRetorno)}</span><br>
+            <span class="badge badge-prioridade ${prioridadeClass(cliente.prioridade || "Normal")}">${cliente.prioridade || "Normal"}</span>
+          </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalhes" onclick="visualizarCliente('${cliente.id}')"><i class="fa-solid fa-eye"></i></button>
+            <button class="btn btn-sm btn-outline-warning action-btn" title="Editar" onclick="editarCliente('${cliente.id}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger action-btn" title="Excluir" onclick="excluirCliente('${cliente.id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>`;
+        clientesTable.appendChild(tr);
+      });
+    }
+
+    function visualizarCliente(id) {
+      const c = clientes.find(cliente => cliente.id === id);
+      if (!c) return;
+
+      document.getElementById("detalhesCliente").innerHTML = `
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="client-avatar" style="width:64px;height:64px;font-size:1.3rem;">${iniciais(c.nome)}</div>
+          <div>
+            <h4 class="mb-1">${c.nome}</h4>
+            <span class="badge badge-status ${statusClass(c.status)}">${c.status}</span>
+          </div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6"><strong>CPF:</strong><br>${c.cpf}</div>
+          <div class="col-md-6"><strong>Nascimento:</strong><br>${c.nascimento || "Não informado"}</div>
+          <div class="col-md-6"><strong>Telefone:</strong><br>${c.telefone}</div>
+          <div class="col-md-6"><strong>E-mail:</strong><br>${c.email || "Não informado"}</div>
+          <div class="col-md-6"><strong>Endereço:</strong><br>${escapeHtml(c.endereco || c.cidade || "Não informado")}</div>
+          <div class="col-md-6"><strong>Unidade:</strong><br>${c.unidade}</div>
+          <div class="col-md-6"><strong>Benefício:</strong><br>${c.beneficio}</div>
+          <div class="col-md-6"><strong>Responsável:</strong><br>${c.responsavel || "Não informado"}</div>
+          <div class="col-md-6"><strong>Prioridade:</strong><br><span class="badge badge-prioridade ${prioridadeClass(c.prioridade || "Normal")}">${c.prioridade || "Normal"}</span></div>
+          <div class="col-md-6"><strong>Data atendimento:</strong><br>${formatarDataBR(c.dataAtendimento)}</div>
+          <div class="col-md-6"><strong>Próximo retorno:</strong><br><span class="${retornoClass(c)}">${formatarDataBR(c.proximoRetorno)}</span></div>
+          <div class="col-12"><strong>Documentos entregues:</strong><br>${renderizarDocumentosDetalhe(normalizarDocumentos(c), "entregues")}</div>
+          <div class="col-12"><strong>Documentos pendentes:</strong><br>${renderizarDocumentosDetalhe(normalizarDocumentos(c), "pendentes")}</div>
+          <div class="col-12"><strong>Observações:</strong><br>${c.observacoes || "Sem observações"}</div>
+        </div>`;
+
+      detalhesModal.show();
+    }
+
+    function editarCliente(id) {
+      const cliente = clientes.find(c => c.id === id);
+      if (cliente) setFormData(cliente);
+    }
+
+    async function excluirCliente(id) {
+      const cliente = clientes.find(c => c.id === id);
+      if (!cliente) return;
+
+      if (confirm(`Deseja excluir o cadastro de ${cliente.nome}?`)) {
+        try {
+          await excluirClienteApi(id);
+          clientes = clientes.filter(c => c.id !== id);
+          atualizarTabela();
+        } catch (erro) {
+          alert(erro.message || "Não foi possível excluir o cliente.");
+        }
+      }
+    }
+
+    function exportarExcel() {
+      if (clientes.length === 0) {
+        alert("Não existem clientes para exportar.");
+        return;
+      }
+
+      const dados = clientes.map(c => ({
+        "Nome": c.nome,
+        "CPF": c.cpf,
+        "Telefone": c.telefone,
+        "E-mail": c.email,
+        "Endereço": c.endereco || c.cidade || "",
+        "Unidade": c.unidade,
+        "Benefício": c.beneficio,
+        "Status": c.status,
+        "Responsável": c.responsavel,
+        "Data atendimento": c.dataAtendimento,
+        "Prioridade": c.prioridade || "Normal",
+        "Próximo retorno": c.proximoRetorno || "",
+        "Documentos entregues": formatarDocumentos(normalizarDocumentos(c), "entregues"),
+        "Documentos pendentes": formatarDocumentos(normalizarDocumentos(c), "pendentes"),
+        "Observações": c.observacoes
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+      XLSX.writeFile(wb, "clientes_aposentadoria_prev.xlsx");
+    }
+
+    document.getElementById("cpf").addEventListener("input", e => e.target.value = formatarCPF(e.target.value));
+    document.getElementById("telefone").addEventListener("input", e => e.target.value = formatarTelefone(e.target.value));
+    beneficioSelect.addEventListener("change", e => renderizarChecklistDocumentos(e.target.value));
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const cliente = getFormData();
+      cliente.documentosChecklist = await obterDocumentosChecklist();
+
+      if (!validarCPFSimples(cliente.cpf)) {
+        alert("CPF inválido. Confira se possui 11 números.");
+        return;
+      }
+
+      const editando = Boolean(document.getElementById("clienteId").value);
+      const cpfDuplicado = clientes.some(c => c.cpf === cliente.cpf && c.id !== cliente.id);
+
+      if (cpfDuplicado) {
+        alert("Já existe um cliente cadastrado com este CPF.");
+        return;
+      }
+
+      try {
+        await salvarClienteApi(cliente);
+      } catch (erro) {
+        alert(erro.message || "Não foi possível salvar o cliente.");
+        return;
+      }
+
+      clientes = await apiRequest();
+      resetModoEdicao();
+      atualizarTabela();
+      alert(editando ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
+    });
+
+    form.addEventListener("reset", () => {
+      setTimeout(() => {
+        if (!document.getElementById("clienteId").value) resetModoEdicao();
+      }, 0);
+    });
+
+    cancelEditBtn.addEventListener("click", resetModoEdicao);
+    searchInput.addEventListener("input", atualizarTabela);
+    statusFilter.addEventListener("change", atualizarTabela);
+    exportBtn.addEventListener("click", exportarExcel);
+
+    document.getElementById("toggleFormBtn").addEventListener("click", () => {
+      const container = document.getElementById("formContainer");
+      const btn = document.getElementById("toggleFormBtn");
+
+      if (container.style.display === "none") {
+        container.style.display = "block";
+        btn.innerHTML = '<i class="fa-solid fa-minus me-1"></i> Minimizar';
+      } else {
+        container.style.display = "none";
+        btn.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Mostrar formulário';
+      }
+    });
+
+    renderizarChecklistDocumentos(beneficioSelect.value);
+    carregarClientes().catch(erro => {
+      console.error(erro);
+      atualizarTabela();
+      alert("Não foi possível conectar ao banco de dados. Abra pelo XAMPP e confira se o MySQL está iniciado.");
+    });
+  </script>
+</body>
+</html>
+
+
+

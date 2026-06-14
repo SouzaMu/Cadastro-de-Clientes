@@ -62,4 +62,27 @@ function criarTabelas(PDO $pdo): void
             INDEX idx_prioridade (prioridade)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS usuarios (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(120) NOT NULL,
+            usuario VARCHAR(80) NOT NULL UNIQUE,
+            senha_hash VARCHAR(255) NOT NULL,
+            criado_em DATETIME NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $totalUsuarios = (int) $pdo->query('SELECT COUNT(*) FROM usuarios')->fetchColumn();
+
+    if ($totalUsuarios === 0) {
+        $stmt = $pdo->prepare(
+            'INSERT INTO usuarios (nome, usuario, senha_hash, criado_em) VALUES (:nome, :usuario, :senha_hash, NOW())'
+        );
+        $stmt->execute([
+            ':nome' => 'Administrador',
+            ':usuario' => 'admin',
+            ':senha_hash' => password_hash('admin123', PASSWORD_DEFAULT),
+        ]);
+    }
 }
