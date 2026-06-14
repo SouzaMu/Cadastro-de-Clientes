@@ -195,6 +195,12 @@
       padding: 7px 10px;
     }
 
+    .badge-prioridade {
+      border-radius: 999px;
+      font-weight: 750;
+      padding: 7px 10px;
+    }
+
     .action-btn {
       width: 34px;
       height: 34px;
@@ -221,6 +227,42 @@
     .small-muted {
       color: #718093;
       font-size: 0.9rem;
+    }
+
+    .documentos-box {
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      background: #f8fbfd;
+      padding: 16px;
+    }
+
+    .documento-item {
+      background: white;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      padding: 12px;
+      height: 100%;
+    }
+
+    .documento-item .form-check-label {
+      font-weight: 650;
+      color: var(--azul-escuro);
+    }
+
+    .documento-modelo {
+      color: #607080;
+      font-size: 0.84rem;
+      margin-top: 4px;
+    }
+
+    .retorno-atrasado {
+      color: var(--vermelho);
+      font-weight: 750;
+    }
+
+    .retorno-hoje {
+      color: #9a6a00;
+      font-weight: 750;
     }
 
     @media (max-width: 768px) {
@@ -297,8 +339,8 @@
         <div class="stat-card d-flex align-items-center gap-3">
           <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
           <div>
-            <p class="stat-number" id="totalFinalizados">0</p>
-            <span class="small-muted">Finalizados</span>
+            <p class="stat-number" id="totalRetornos">0</p>
+            <span class="small-muted">Retornos pendentes</span>
           </div>
         </div>
       </div>
@@ -338,8 +380,8 @@
               <input type="email" class="form-control" id="email" placeholder="cliente@email.com" />
             </div>
             <div class="col-md-4">
-              <label for="cidade" class="form-label">Cidade</label>
-              <input type="text" class="form-control" id="cidade" placeholder="Americana, Sumaré..." />
+              <label for="endereco" class="form-label">Endereço</label>
+              <input type="text" class="form-control" id="endereco" placeholder="Rua, número, bairro e cidade" />
             </div>
 
             <div class="col-md-4">
@@ -348,7 +390,7 @@
                 <option value="">Selecione...</option>
                 <option>Americana</option>
                 <option>Sumaré</option>
-                <option>Online</option>
+                <option>Santa Barbara Do Oeste</option>
               </select>
             </div>
             <div class="col-md-4">
@@ -391,24 +433,36 @@
               </select>
             </div>
             <div class="col-md-4">
-              <label for="origem" class="form-label">Origem do cliente</label>
-              <select class="form-select" id="origem">
-                <option>WhatsApp</option>
-                <option>Site</option>
-                <option>Indicação</option>
-                <option>Instagram/Facebook</option>
-                <option>Atendimento presencial</option>
-                <option>Outro</option>
-              </select>
-            </div>
-            <div class="col-md-4">
               <label for="dataAtendimento" class="form-label">Data do atendimento</label>
               <input type="date" class="form-control" id="dataAtendimento" />
             </div>
+            <div class="col-md-4">
+              <label for="prioridade" class="form-label">Prioridade</label>
+              <select class="form-select" id="prioridade">
+                <option>Normal</option>
+                <option>Alta</option>
+                <option>Urgente</option>
+                <option>Baixa</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="proximoRetorno" class="form-label">Próximo retorno</label>
+              <input type="date" class="form-control" id="proximoRetorno" />
+            </div>
 
             <div class="col-12">
-              <label for="documentos" class="form-label">Documentos entregues</label>
-              <input type="text" class="form-control" id="documentos" placeholder="Ex: RG, CPF, CNIS, carteira de trabalho, comprovante de residência..." />
+              <div class="documentos-box">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+                  <div>
+                    <label class="form-label mb-1">Checklist de documentos</label>
+                    <div class="small-muted">Escolha o tipo de benefício para carregar a lista. Marque o que já foi entregue e anexe o PDF quando houver.</div>
+                  </div>
+                  <span class="badge text-bg-light border" id="documentosResumo">0 de 0 entregues</span>
+                </div>
+                <div class="row g-3" id="documentosChecklist">
+                  <div class="col-12 small-muted">Selecione um benefício para ver os documentos necessários.</div>
+                </div>
+              </div>
             </div>
 
             <div class="col-12">
@@ -433,6 +487,7 @@
           <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar nome, CPF ou benefício..." />
           <select class="form-select form-select-sm" id="statusFilter">
             <option value="">Todos os status</option>
+            <option value="__retornos">Retornos pendentes</option>
             <option>Em análise</option>
             <option>Aguardando documentos</option>
             <option>Agendado</option>
@@ -455,6 +510,7 @@
                 <th>Benefício</th>
                 <th>Unidade</th>
                 <th>Status</th>
+                <th>Retorno</th>
                 <th class="text-center">Ações</th>
               </tr>
             </thead>
@@ -482,8 +538,92 @@
 
   <script>
     const STORAGE_KEY = "aposentadoria_prev_clientes";
+    const API_URL = "clientes_api.php";
+    const DOCUMENTOS_BASE = [
+      "RG e CPF",
+      "Comprovante de residência",
+      "Carteira de trabalho",
+      "CNIS atualizado",
+      "Senha ou acesso ao Meu INSS"
+    ];
+    const DOCUMENTOS_POR_BENEFICIO = {
+      "Aposentadoria por idade": [
+        ...DOCUMENTOS_BASE,
+        "Certidão de nascimento ou casamento",
+        "Carnês de contribuição",
+        "Documentos de atividade rural, se houver"
+      ],
+      "Aposentadoria por tempo de contribuição": [
+        ...DOCUMENTOS_BASE,
+        "PPP",
+        "LTCAT ou laudos de insalubridade",
+        "Certificado de reservista",
+        "Documentos de vínculos sem registro no CNIS"
+      ],
+      "Aposentadoria do professor": [
+        ...DOCUMENTOS_BASE,
+        "Declaração da escola",
+        "Contratos ou portarias de professor",
+        "Holerites ou comprovantes de vínculo"
+      ],
+      "Aposentadoria por invalidez": [
+        ...DOCUMENTOS_BASE,
+        "Laudos médicos",
+        "Exames recentes",
+        "Receitas e relatórios de tratamento",
+        "Atestados de afastamento"
+      ],
+      "Aposentadoria servidor público": [
+        ...DOCUMENTOS_BASE,
+        "Certidão de tempo de contribuição",
+        "Portarias de nomeação",
+        "Holerites",
+        "Ficha funcional"
+      ],
+      "BPC / LOAS": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "CadÚnico atualizado",
+        "Comprovantes de renda do grupo familiar",
+        "Laudos médicos, se pessoa com deficiência",
+        "Exames e receitas médicas"
+      ],
+      "Pensão por morte": [
+        "RG e CPF do requerente",
+        "RG e CPF do falecido",
+        "Certidão de óbito",
+        "Certidão de casamento ou prova de união estável",
+        "Documentos dos dependentes",
+        "CNIS do falecido"
+      ],
+      "Auxílio maternidade": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "Certidão de nascimento da criança",
+        "Atestado médico, se antes do parto",
+        "Carteira de trabalho",
+        "CNIS atualizado"
+      ],
+      "Revisão de benefício": [
+        "RG e CPF",
+        "Carta de concessão",
+        "Processo administrativo do INSS",
+        "CNIS atualizado",
+        "Memória de cálculo",
+        "Extrato de pagamento do benefício"
+      ],
+      "Serviços digitais Meu INSS": [
+        "RG e CPF",
+        "Comprovante de residência",
+        "Senha ou acesso ao Meu INSS",
+        "Número do benefício, se houver",
+        "Procuração ou termo de autorização"
+      ],
+      "Outro": DOCUMENTOS_BASE
+    };
 
-    let clientes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let clientes = [];
+    let documentosAnexosAtuais = [];
 
     const form = document.getElementById("clientForm");
     const clientesTable = document.getElementById("clientesTable");
@@ -492,6 +632,9 @@
     const exportBtn = document.getElementById("exportBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
     const formTitle = document.getElementById("formTitle");
+    const beneficioSelect = document.getElementById("beneficio");
+    const documentosChecklist = document.getElementById("documentosChecklist");
+    const documentosResumo = document.getElementById("documentosResumo");
     const detalhesModal = new bootstrap.Modal(document.getElementById("detalhesModal"));
 
     function somenteNumeros(valor) {
@@ -519,8 +662,180 @@
       return n.length === 11 && !/^(\d)\1+$/.test(n);
     }
 
-    function salvarLocal() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clientes));
+    async function apiRequest(opcoes = {}) {
+      const resposta = await fetch(API_URL, {
+        headers: { "Content-Type": "application/json" },
+        ...opcoes
+      });
+      const dados = await resposta.json().catch(() => ({}));
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro ao comunicar com o servidor.");
+      }
+
+      return dados;
+    }
+
+    async function carregarClientes() {
+      clientes = await apiRequest();
+      await migrarClientesDoNavegador();
+      atualizarTabela();
+    }
+
+    async function salvarClienteApi(cliente) {
+      await apiRequest({
+        method: "POST",
+        body: JSON.stringify(cliente)
+      });
+    }
+
+    async function excluirClienteApi(id) {
+      const resposta = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const dados = await resposta.json().catch(() => ({}));
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro ao excluir cliente.");
+      }
+    }
+
+    async function migrarClientesDoNavegador() {
+      const clientesLocais = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (!clientesLocais.length || clientes.length > 0) return;
+
+      for (const cliente of clientesLocais) {
+        await salvarClienteApi({
+          ...cliente,
+          endereco: cliente.endereco || cliente.cidade || "",
+          documentosChecklist: normalizarDocumentos(cliente)
+        });
+      }
+
+      localStorage.removeItem(STORAGE_KEY);
+      clientes = await apiRequest();
+    }
+
+    function escapeHtml(valor) {
+      return String(valor || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function documentosDoBeneficio(beneficio) {
+      return DOCUMENTOS_POR_BENEFICIO[beneficio] || [];
+    }
+
+    function lerArquivoComoDataURL(arquivo) {
+      return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => resolve(leitor.result);
+        leitor.onerror = reject;
+        leitor.readAsDataURL(arquivo);
+      });
+    }
+
+    function normalizarDocumentos(cliente) {
+      if (Array.isArray(cliente.documentosChecklist)) return cliente.documentosChecklist;
+      if (!cliente.documentos) return [];
+
+      return String(cliente.documentos)
+        .split(",")
+        .map(doc => doc.trim())
+        .filter(Boolean)
+        .map(nome => ({ nome, recebido: true, arquivo: "" }));
+    }
+
+    function atualizarResumoDocumentos() {
+      const checks = [...documentosChecklist.querySelectorAll(".documento-entregue")];
+      const entregues = checks.filter(check => check.checked).length;
+      documentosResumo.textContent = `${entregues} de ${checks.length} entregues`;
+    }
+
+    function renderizarChecklistDocumentos(beneficio, documentosSalvos = []) {
+      const salvosPorNome = new Map(documentosSalvos.map(doc => [doc.nome, doc]));
+      const nomes = [...documentosDoBeneficio(beneficio)];
+
+      documentosSalvos.forEach(doc => {
+        if (doc.nome && !nomes.includes(doc.nome)) nomes.push(doc.nome);
+      });
+
+      if (!beneficio) {
+        documentosAnexosAtuais = [];
+        documentosChecklist.innerHTML = '<div class="col-12 small-muted">Selecione um benefício para ver os documentos necessários.</div>';
+        documentosResumo.textContent = "0 de 0 entregues";
+        return;
+      }
+
+      documentosAnexosAtuais = nomes.map(nome => salvosPorNome.get(nome) || {});
+
+      documentosChecklist.innerHTML = nomes.map((nome, index) => {
+        const salvo = salvosPorNome.get(nome) || {};
+        const arquivo = salvo.arquivo || "";
+        return `
+          <div class="col-md-6">
+            <div class="documento-item">
+              <div class="form-check">
+                <input class="form-check-input documento-entregue" type="checkbox" id="doc-${index}" data-index="${index}" ${salvo.recebido ? "checked" : ""}>
+                <label class="form-check-label" for="doc-${index}">${escapeHtml(nome)}</label>
+              </div>
+              <div class="documento-modelo">Modelo: ${escapeHtml(beneficio)}</div>
+              <input class="form-control form-control-sm mt-2 documento-pdf" type="file" accept="application/pdf,.pdf" data-index="${index}" data-nome="${escapeHtml(nome)}" data-arquivo="${escapeHtml(arquivo)}">
+              <div class="small-muted mt-1 documento-arquivo">${arquivo ? `PDF: ${escapeHtml(arquivo)}` : "Nenhum PDF anexado"}</div>
+            </div>
+          </div>`;
+      }).join("");
+
+      documentosChecklist.querySelectorAll(".documento-entregue").forEach(check => {
+        check.addEventListener("change", atualizarResumoDocumentos);
+      });
+
+      documentosChecklist.querySelectorAll(".documento-pdf").forEach(input => {
+        input.addEventListener("change", () => {
+          const arquivo = input.files[0]?.name || "";
+          input.dataset.arquivo = arquivo;
+          input.nextElementSibling.textContent = arquivo ? `PDF: ${arquivo}` : "Nenhum PDF anexado";
+        });
+      });
+
+      atualizarResumoDocumentos();
+    }
+
+    async function obterDocumentosChecklist() {
+      return Promise.all([...documentosChecklist.querySelectorAll(".documento-pdf")].map(async input => {
+        const index = input.dataset.index;
+        const check = documentosChecklist.querySelector(`.documento-entregue[data-index="${index}"]`);
+        const arquivoSelecionado = input.files[0];
+        const salvo = documentosAnexosAtuais[Number(index)] || {};
+        return {
+          nome: input.dataset.nome,
+          recebido: Boolean(check?.checked),
+          arquivo: arquivoSelecionado?.name || input.dataset.arquivo || "",
+          arquivoTipo: arquivoSelecionado?.type || salvo.arquivoTipo || "",
+          arquivoConteudo: arquivoSelecionado ? await lerArquivoComoDataURL(arquivoSelecionado) : (salvo.arquivoConteudo || "")
+        };
+      }));
+    }
+
+    function formatarDocumentos(documentos, modo = "todos") {
+      const lista = Array.isArray(documentos) ? documentos : [];
+      const filtrados = lista.filter(doc => modo === "todos" || (modo === "entregues" ? doc.recebido : !doc.recebido));
+      if (filtrados.length === 0) return "Nenhum";
+      return filtrados.map(doc => `${doc.nome}${doc.arquivo ? ` (${doc.arquivo})` : ""}`).join(", ");
+    }
+
+    function renderizarDocumentosDetalhe(documentos, modo = "todos") {
+      const lista = Array.isArray(documentos) ? documentos : [];
+      const filtrados = lista.filter(doc => modo === "todos" || (modo === "entregues" ? doc.recebido : !doc.recebido));
+      if (filtrados.length === 0) return "Nenhum";
+
+      return `<ul class="mb-0 ps-3">${filtrados.map(doc => {
+        const arquivo = doc.arquivoConteudo
+          ? ` - <a href="${escapeHtml(doc.arquivoConteudo)}" download="${escapeHtml(doc.arquivo || "documento.pdf")}">${escapeHtml(doc.arquivo || "Abrir PDF")}</a>`
+          : (doc.arquivo ? ` - ${escapeHtml(doc.arquivo)}` : "");
+        return `<li>${escapeHtml(doc.nome)}${arquivo}</li>`;
+      }).join("")}</ul>`;
     }
 
     function getFormData() {
@@ -531,14 +846,15 @@
         nascimento: document.getElementById("nascimento").value,
         telefone: document.getElementById("telefone").value.trim(),
         email: document.getElementById("email").value.trim(),
-        cidade: document.getElementById("cidade").value.trim(),
+        endereco: document.getElementById("endereco").value.trim(),
         unidade: document.getElementById("unidade").value,
         beneficio: document.getElementById("beneficio").value,
         status: document.getElementById("status").value,
         responsavel: document.getElementById("responsavel").value,
-        origem: document.getElementById("origem").value,
         dataAtendimento: document.getElementById("dataAtendimento").value,
-        documentos: document.getElementById("documentos").value.trim(),
+        prioridade: document.getElementById("prioridade").value,
+        proximoRetorno: document.getElementById("proximoRetorno").value,
+        documentosChecklist: [],
         observacoes: document.getElementById("observacoes").value.trim(),
         criadoEm: new Date().toISOString()
       };
@@ -551,15 +867,16 @@
       document.getElementById("nascimento").value = cliente.nascimento || "";
       document.getElementById("telefone").value = cliente.telefone || "";
       document.getElementById("email").value = cliente.email || "";
-      document.getElementById("cidade").value = cliente.cidade || "";
+      document.getElementById("endereco").value = cliente.endereco || cliente.cidade || "";
       document.getElementById("unidade").value = cliente.unidade || "";
       document.getElementById("beneficio").value = cliente.beneficio || "";
-      document.getElementById("status").value = cliente.status || "Novo lead";
+      document.getElementById("status").value = cliente.status || "Em análise";
       document.getElementById("responsavel").value = cliente.responsavel || "";
-      document.getElementById("origem").value = cliente.origem || "WhatsApp";
       document.getElementById("dataAtendimento").value = cliente.dataAtendimento || "";
-      document.getElementById("documentos").value = cliente.documentos || "";
+      document.getElementById("prioridade").value = cliente.prioridade || "Normal";
+      document.getElementById("proximoRetorno").value = cliente.proximoRetorno || "";
       document.getElementById("observacoes").value = cliente.observacoes || "";
+      renderizarChecklistDocumentos(cliente.beneficio || "", normalizarDocumentos(cliente));
 
       formTitle.textContent = "Editar atendimento";
       cancelEditBtn.style.display = "inline-block";
@@ -571,6 +888,7 @@
       document.getElementById("clienteId").value = "";
       formTitle.textContent = "Novo atendimento";
       cancelEditBtn.style.display = "none";
+      renderizarChecklistDocumentos("");
     }
 
     function iniciais(nome) {
@@ -594,11 +912,44 @@
       return mapa[status] || "text-bg-secondary";
     }
 
+    function prioridadeClass(prioridade) {
+      const mapa = {
+        "Urgente": "text-bg-danger",
+        "Alta": "text-bg-warning",
+        "Normal": "text-bg-primary",
+        "Baixa": "text-bg-light text-dark border"
+      };
+      return mapa[prioridade] || "text-bg-secondary";
+    }
+
+    function hojeISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatarDataBR(data) {
+      if (!data) return "Não informado";
+      const [ano, mes, dia] = data.split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function retornoPendente(cliente) {
+      if (!cliente.proximoRetorno) return false;
+      if (["Finalizado", "Arquivado"].includes(cliente.status)) return false;
+      return cliente.proximoRetorno <= hojeISO();
+    }
+
+    function retornoClass(cliente) {
+      if (!cliente.proximoRetorno || ["Finalizado", "Arquivado"].includes(cliente.status)) return "";
+      if (cliente.proximoRetorno < hojeISO()) return "retorno-atrasado";
+      if (cliente.proximoRetorno === hojeISO()) return "retorno-hoje";
+      return "";
+    }
+
     function atualizarDashboard() {
       document.getElementById("totalClientes").textContent = clientes.length;
       document.getElementById("totalAnalise").textContent = clientes.filter(c => c.status === "Em análise").length;
       document.getElementById("totalDocs").textContent = clientes.filter(c => c.status === "Aguardando documentos").length;
-      document.getElementById("totalFinalizados").textContent = clientes.filter(c => c.status === "Finalizado").length;
+      document.getElementById("totalRetornos").textContent = clientes.filter(retornoPendente).length;
     }
 
     function filtrarClientes() {
@@ -606,9 +957,9 @@
       const filtroStatus = statusFilter.value;
 
       return clientes.filter(c => {
-        const texto = `${c.nome} ${c.cpf} ${c.telefone} ${c.beneficio} ${c.cidade}`.toLowerCase();
+        const texto = `${c.nome} ${c.cpf} ${c.telefone} ${c.beneficio} ${c.endereco || c.cidade || ""} ${c.prioridade || ""} ${c.proximoRetorno || ""}`.toLowerCase();
         const bateTexto = texto.includes(termo);
-        const bateStatus = !filtroStatus || c.status === filtroStatus;
+        const bateStatus = filtroStatus === "__retornos" ? retornoPendente(c) : (!filtroStatus || c.status === filtroStatus);
         return bateTexto && bateStatus;
       });
     }
@@ -621,7 +972,7 @@
       if (lista.length === 0) {
         clientesTable.innerHTML = `
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <div class="empty-state">
                 <i class="fa-solid fa-user-clock fa-2x mb-3"></i>
                 <p class="mb-0">Nenhum cliente encontrado.</p>
@@ -639,7 +990,7 @@
               <div class="client-avatar">${iniciais(cliente.nome)}</div>
               <div>
                 <strong>${cliente.nome}</strong><br>
-                <small class="text-muted">${cliente.cidade || "Cidade não informada"}</small>
+                <small class="text-muted">${escapeHtml(cliente.endereco || cliente.cidade || "Endereço não informado")}</small>
               </div>
             </div>
           </td>
@@ -651,6 +1002,10 @@
           <td>${cliente.beneficio}</td>
           <td>${cliente.unidade}</td>
           <td><span class="badge badge-status ${statusClass(cliente.status)}">${cliente.status}</span></td>
+          <td>
+            <span class="${retornoClass(cliente)}">${formatarDataBR(cliente.proximoRetorno)}</span><br>
+            <span class="badge badge-prioridade ${prioridadeClass(cliente.prioridade || "Normal")}">${cliente.prioridade || "Normal"}</span>
+          </td>
           <td class="text-center">
             <button class="btn btn-sm btn-outline-primary action-btn" title="Ver detalhes" onclick="visualizarCliente('${cliente.id}')"><i class="fa-solid fa-eye"></i></button>
             <button class="btn btn-sm btn-outline-warning action-btn" title="Editar" onclick="editarCliente('${cliente.id}')"><i class="fa-solid fa-pen"></i></button>
@@ -677,13 +1032,15 @@
           <div class="col-md-6"><strong>Nascimento:</strong><br>${c.nascimento || "Não informado"}</div>
           <div class="col-md-6"><strong>Telefone:</strong><br>${c.telefone}</div>
           <div class="col-md-6"><strong>E-mail:</strong><br>${c.email || "Não informado"}</div>
-          <div class="col-md-6"><strong>Cidade:</strong><br>${c.cidade || "Não informada"}</div>
+          <div class="col-md-6"><strong>Endereço:</strong><br>${escapeHtml(c.endereco || c.cidade || "Não informado")}</div>
           <div class="col-md-6"><strong>Unidade:</strong><br>${c.unidade}</div>
           <div class="col-md-6"><strong>Benefício:</strong><br>${c.beneficio}</div>
           <div class="col-md-6"><strong>Responsável:</strong><br>${c.responsavel || "Não informado"}</div>
-          <div class="col-md-6"><strong>Origem:</strong><br>${c.origem || "Não informada"}</div>
-          <div class="col-md-6"><strong>Data atendimento:</strong><br>${c.dataAtendimento || "Não informada"}</div>
-          <div class="col-12"><strong>Documentos:</strong><br>${c.documentos || "Nenhum documento informado"}</div>
+          <div class="col-md-6"><strong>Prioridade:</strong><br><span class="badge badge-prioridade ${prioridadeClass(c.prioridade || "Normal")}">${c.prioridade || "Normal"}</span></div>
+          <div class="col-md-6"><strong>Data atendimento:</strong><br>${formatarDataBR(c.dataAtendimento)}</div>
+          <div class="col-md-6"><strong>Próximo retorno:</strong><br><span class="${retornoClass(c)}">${formatarDataBR(c.proximoRetorno)}</span></div>
+          <div class="col-12"><strong>Documentos entregues:</strong><br>${renderizarDocumentosDetalhe(normalizarDocumentos(c), "entregues")}</div>
+          <div class="col-12"><strong>Documentos pendentes:</strong><br>${renderizarDocumentosDetalhe(normalizarDocumentos(c), "pendentes")}</div>
           <div class="col-12"><strong>Observações:</strong><br>${c.observacoes || "Sem observações"}</div>
         </div>`;
 
@@ -695,14 +1052,18 @@
       if (cliente) setFormData(cliente);
     }
 
-    function excluirCliente(id) {
+    async function excluirCliente(id) {
       const cliente = clientes.find(c => c.id === id);
       if (!cliente) return;
 
       if (confirm(`Deseja excluir o cadastro de ${cliente.nome}?`)) {
-        clientes = clientes.filter(c => c.id !== id);
-        salvarLocal();
-        atualizarTabela();
+        try {
+          await excluirClienteApi(id);
+          clientes = clientes.filter(c => c.id !== id);
+          atualizarTabela();
+        } catch (erro) {
+          alert(erro.message || "Não foi possível excluir o cliente.");
+        }
       }
     }
 
@@ -717,14 +1078,16 @@
         "CPF": c.cpf,
         "Telefone": c.telefone,
         "E-mail": c.email,
-        "Cidade": c.cidade,
+        "Endereço": c.endereco || c.cidade || "",
         "Unidade": c.unidade,
         "Benefício": c.beneficio,
         "Status": c.status,
         "Responsável": c.responsavel,
-        "Origem": c.origem,
         "Data atendimento": c.dataAtendimento,
-        "Documentos": c.documentos,
+        "Prioridade": c.prioridade || "Normal",
+        "Próximo retorno": c.proximoRetorno || "",
+        "Documentos entregues": formatarDocumentos(normalizarDocumentos(c), "entregues"),
+        "Documentos pendentes": formatarDocumentos(normalizarDocumentos(c), "pendentes"),
         "Observações": c.observacoes
       }));
 
@@ -736,10 +1099,12 @@
 
     document.getElementById("cpf").addEventListener("input", e => e.target.value = formatarCPF(e.target.value));
     document.getElementById("telefone").addEventListener("input", e => e.target.value = formatarTelefone(e.target.value));
+    beneficioSelect.addEventListener("change", e => renderizarChecklistDocumentos(e.target.value));
 
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", async e => {
       e.preventDefault();
       const cliente = getFormData();
+      cliente.documentosChecklist = await obterDocumentosChecklist();
 
       if (!validarCPFSimples(cliente.cpf)) {
         alert("CPF inválido. Confira se possui 11 números.");
@@ -754,13 +1119,14 @@
         return;
       }
 
-      if (editando) {
-        clientes = clientes.map(c => c.id === cliente.id ? { ...c, ...cliente } : c);
-      } else {
-        clientes.push(cliente);
+      try {
+        await salvarClienteApi(cliente);
+      } catch (erro) {
+        alert(erro.message || "Não foi possível salvar o cliente.");
+        return;
       }
 
-      salvarLocal();
+      clientes = await apiRequest();
       resetModoEdicao();
       atualizarTabela();
       alert(editando ? "Cliente atualizado com sucesso!" : "Cliente cadastrado com sucesso!");
@@ -790,7 +1156,12 @@
       }
     });
 
-    atualizarTabela();
+    renderizarChecklistDocumentos(beneficioSelect.value);
+    carregarClientes().catch(erro => {
+      console.error(erro);
+      atualizarTabela();
+      alert("Não foi possível conectar ao banco de dados. Abra pelo XAMPP e confira se o MySQL está iniciado.");
+    });
   </script>
 </body>
 </html>
